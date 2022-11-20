@@ -264,7 +264,7 @@ uint_8t inv_affine(const uint_8t x)
 #define block_copy(d, s) copy_block(d, s)
 #endif
 
-static void xor_block(void *d, const void *s)
+void xor_block(void *d, const void *s)
 {
 #if defined(HAVE_UINT_32T)
     ((uint_32t *)d)[0] ^= ((uint_32t *)s)[0];

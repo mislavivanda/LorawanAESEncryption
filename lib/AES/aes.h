@@ -69,6 +69,7 @@ extern "C"
         be entered as a length in bytes (valid inputs are hence
         128, 192, 16, 24 and 32).
     */
+    extern void xor_block(void *d, const void *s);
 
 #if defined(AES_ENC_PREKEYED) || defined(AES_DEC_PREKEYED)
     // extern -> PROBLEM S UKLJUCIVANJEM C METODA U C++
