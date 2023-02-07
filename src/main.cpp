@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <aes.h>
+#include <LowPower.h>
 uint_8t AppSKey[N_BLOCK] = {0x30, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x35, 0x30, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x35};
 // PUT YOUR PAYLOAD BYTES HERE
 uint_8t payloadText[] = {0x30, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x35, 0x30, 0x30, 0x30, 0x30, 0x37, 0x30, 0x31, 0x35};
@@ -16,7 +17,6 @@ uint_8t zeroPaddingByte = 0x00;
 boolean encryptionFinished = false;
 void payloadEncryption()
 {
-  unsigned long ms1 = micros();
   // set AES key and initialize context
   aes_set_key(AppSKey, AESKeyLength, &AESContext);
   // block size = 16bytes -> number of blocks -> ceil((payload size in bytes) / 16)
@@ -34,13 +34,6 @@ void payloadEncryption()
     }
   }
   uint_8t encryptedPayload[N_BLOCK * blockNumbers];
-  Serial.print("Plaintext(HEX): ");
-  for (int i = 0; i < blockNumbers * N_BLOCK; i++)
-  {
-    Serial.print(payload[i], 16);
-    Serial.print(" ");
-  }
-  Serial.println();
   for (int i = 1; i <= blockNumbers; i++)
   {
     uint_8t byteCastedi = i;
@@ -51,7 +44,9 @@ void payloadEncryption()
     memcpy(AESIterationPlaintextBlock + 10, frameCount, 4);
     memcpy(AESIterationPlaintextBlock + 14, &AESIterationPlaintextBlockConst2, 1);
     memcpy(AESIterationPlaintextBlock + 15, &byteCastedi, 1);
+    digitalWrite(5, HIGH);
     aes_encrypt(AESIterationPlaintextBlock, AESIterationCiphertextBlock, &AESContext);
+    digitalWrite(5, LOW);
     // XOR current payload block and AESIterationCiphertextBlock
     uint_8t currentPayloadBlock[N_BLOCK];
     memcpy(currentPayloadBlock, payload + (i - 1) * N_BLOCK, N_BLOCK);
@@ -59,31 +54,17 @@ void payloadEncryption()
     // copy to encryptedPayload block
     memcpy(encryptedPayload + (i - 1) * N_BLOCK, currentPayloadBlock, N_BLOCK);
   }
-  Serial.print("Encrypted payload(HEX): ");
-  for (int i = 0; i < blockNumbers * N_BLOCK; i++)
-  {
-    Serial.print(encryptedPayload[i], 16);
-    Serial.print(" ");
-  }
-  Serial.println("\n============================================================");
-  unsigned long ms2 = micros();
-  Serial.print("Encryption took: ");
-  Serial.print(ms2 - ms1);
-  Serial.print(" micro seconds");
 }
 void setup()
 {
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
   // put your setup code here, to run once:
   Serial.begin(115200);
-  Serial.println("============================================================");
 }
 
 void loop()
 {
-  delay(1000);
-  if (!encryptionFinished)
-  {
-    payloadEncryption();
-    encryptionFinished = true;
-  }
+  payloadEncryption();
+  LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
 }
